@@ -1,15 +1,16 @@
 package io.vertx.streams.impl;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.streams.ConsumerStream;
 
 import java.util.LinkedList;
-import java.util.UUID;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -17,64 +18,93 @@ import java.util.UUID;
 public class ConsumerStreamImpl<T> implements ConsumerStream<T> {
 
   private final EventBus bus;
+  private final Context ctx = Vertx.currentContext();
   private Handler<T> handler;
   private Handler<Void> endHandler;
-  private String uuid;
+  private String localAddress;
   private String address;
+  private EventBusTransport transport;
 
   public ConsumerStreamImpl(EventBus bus) {
     this.bus = bus;
+    this.transport = new EventBusTransport(bus);
   }
 
-  private LinkedList<Message<T>> pending = new LinkedList<>();
+  private static final int DISCONNECTED = 0, CONNECTING = 1, CONNECTED = 2;
 
-  private void deliver(Message<T> msg) {
-    String action = msg.headers().get("action");
-    if (action != null) {
-      switch (action) {
-        case "end":
-          if (endHandler != null) {
-            endHandler.handle(null);
-          }
-          break;
-        default:
-          break;
-      }
-    } else {
-      handler.handle(msg.body());
-    }
-  }
+  private LinkedList<T> pending = new LinkedList<>();
+  private int status = DISCONNECTED;
 
   @Override
   public void subscribe(String address, Handler<AsyncResult<Void>> doneHandler) {
-    this.uuid = UUID.randomUUID().toString();
+    if (status != DISCONNECTED) {
+      throw new IllegalArgumentException();
+    }
+    this.status = CONNECTING;
     this.address = address;
-    MessageConsumer<T> consumer = bus.consumer(uuid, msg -> {
-      synchronized (ConsumerStreamImpl.this) {
-        if (pending != null) {
-          pending.add(msg);
-          return;
+    transport.bind(address, new WriteStream<T>() {
+      @Override
+      public WriteStream<T> exceptionHandler(Handler<Throwable> handler) {
+        return this;
+      }
+      @Override
+      public WriteStream<T> write(T t) {
+        switch (status) {
+          case CONNECTING:
+            pending.add(t);
+            break;
+          case CONNECTED: {
+            if (handler != null) {
+              handler.handle(t);
+            }
+            break;
+          }
+        }
+        return this;
+      }
+      @Override
+      public void end() {
+        switch (status) {
+          case CONNECTING:
+            // Todo
+            break;
+          case CONNECTED: {
+            if (endHandler != null) {
+              endHandler.handle(null);
+            }
+            break;
+          }
         }
       }
-      deliver(msg);
-    });
-    consumer.completionHandler(ar1 -> {
-      if (ar1.succeeded()) {
-        bus.send(address, uuid, new DeliveryOptions().addHeader("action", "open"), ar2 -> {
-          if (ar2.failed()) {
-            consumer.unregister();
-          }
-          doneHandler.handle(ar2.mapEmpty());
-          synchronized (ConsumerStreamImpl.this) {
-            Message<T> msg;
-            while ((msg = pending.poll()) != null) {
-              deliver(msg); // Not great but for now OK
-            }
-            pending = null;
-          }
-        });
+      @Override
+      public WriteStream<T> setWriteQueueMaxSize(int i) {
+        return this;
+      }
+      @Override
+      public boolean writeQueueFull() {
+        return false;
+      }
+      @Override
+      public WriteStream<T> drainHandler(Handler<Void> handler) {
+        return this;
+      }
+    }, ar -> {
+      if (ar.failed()) {
+        status = DISCONNECTED;
+        doneHandler.handle(Future.failedFuture(ar.cause()));
       } else {
-        doneHandler.handle(ar1);
+        status = CONNECTED;
+        localAddress = ar.result();
+        doneHandler.handle(Future.succeededFuture());
+        synchronized (ConsumerStreamImpl.this) {
+          T item;
+          while ((item = pending.poll()) != null) {
+            T o = item;
+            ctx.runOnContext(v -> {
+              handler.handle(o);
+            });
+          }
+        }
       }
     });
   }
@@ -108,6 +138,6 @@ public class ConsumerStreamImpl<T> implements ConsumerStream<T> {
 
   @Override
   public void close() {
-    bus.send(address, uuid, new DeliveryOptions().addHeader("action", "close"));
+    bus.send(address, localAddress, new DeliveryOptions().addHeader("action", "close"));
   }
 }
