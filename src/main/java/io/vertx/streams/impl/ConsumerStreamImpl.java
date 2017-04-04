@@ -23,11 +23,16 @@ public class ConsumerStreamImpl<T> implements ConsumerStream<T> {
   private Handler<Void> endHandler;
   private String localAddress;
   private String address;
-  private EventBusTransport transport;
+  private Transport transport;
 
   public ConsumerStreamImpl(EventBus bus) {
     this.bus = bus;
     this.transport = new EventBusTransport(bus);
+  }
+
+  public ConsumerStreamImpl(EventBus bus, Transport transport) {
+    this.bus = bus;
+    this.transport = transport;
   }
 
   private static final int DISCONNECTED = 0, CONNECTING = 1, CONNECTED = 2;
@@ -42,7 +47,7 @@ public class ConsumerStreamImpl<T> implements ConsumerStream<T> {
     }
     this.status = CONNECTING;
     this.address = address;
-    transport.bind(address, new WriteStream<T>() {
+    transport.bind(new WriteStream<T>() {
       @Override
       public WriteStream<T> exceptionHandler(Handler<Throwable> handler) {
         return this;
@@ -95,16 +100,24 @@ public class ConsumerStreamImpl<T> implements ConsumerStream<T> {
       } else {
         status = CONNECTED;
         localAddress = ar.result();
-        doneHandler.handle(Future.succeededFuture());
-        synchronized (ConsumerStreamImpl.this) {
-          T item;
-          while ((item = pending.poll()) != null) {
-            T o = item;
-            ctx.runOnContext(v -> {
-              handler.handle(o);
-            });
+        bus.send(address, localAddress, new DeliveryOptions().addHeader("action", "open"), ar2 -> {
+          if (ar2.failed()) {
+//            consumer.unregister();
+//            completionHandler.handle(Future.failedFuture(ar2.cause()));
+            throw new UnsupportedOperationException("Implement me");
+          } else {
+            doneHandler.handle(Future.succeededFuture());
+            synchronized (ConsumerStreamImpl.this) {
+              T item;
+              while ((item = pending.poll()) != null) {
+                T o = item;
+                ctx.runOnContext(v -> {
+                  handler.handle(o);
+                });
+              }
+            }
           }
-        }
+        });
       }
     });
   }

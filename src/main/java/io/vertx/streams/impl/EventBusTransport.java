@@ -15,15 +15,15 @@ import java.util.UUID;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-class EventBusTransport {
+public class EventBusTransport implements Transport {
 
   private final EventBus bus;
 
-  EventBusTransport(EventBus bus) {
+  public EventBusTransport(EventBus bus) {
     this.bus = bus;
   }
 
-  <T> void bind(String address, WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
+  public <T> void bind(WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
     String uuid = UUID.randomUUID().toString();
     MessageConsumer<T> consumer = bus.consumer(uuid, msg -> {
       String action = msg.headers().get("action");
@@ -35,44 +35,26 @@ class EventBusTransport {
     });
     consumer.completionHandler(ar1 -> {
       if (ar1.succeeded()) {
-        bus.send(address, uuid, new DeliveryOptions().addHeader("action", "open"), ar2 -> {
-          if (ar2.failed()) {
-            consumer.unregister();
-            completionHandler.handle(Future.failedFuture(ar2.cause()));
-          } else {
-            completionHandler.handle(Future.succeededFuture(uuid));
-          }
-        });
+        completionHandler.handle(Future.succeededFuture(uuid));
       } else {
         completionHandler.handle(Future.failedFuture(ar1.cause()));
       }
     });
   }
 
-  <T> ProducerStream<T> createStream(Message<String> msg) {
-    return new ProducerStreamImpl<>(msg);
+  @Override
+  public <T> void resolveStream(Message<String> msg, Handler<AsyncResult<ProducerStream<T>>> completionHandler) {
+    completionHandler.handle(Future.succeededFuture(new ProducerStreamImpl<T>(msg)));
   }
-
 
   private class ProducerStreamImpl<T> implements ProducerStream<T> {
 
-    final Message<String> msg;
+//    final Message<String> msg;
     final String dst;
     Handler<Void> closeHandler;
 
     public ProducerStreamImpl(Message<String> msg) {
-      this.msg = msg;
       this.dst = msg.body();
-    }
-
-    @Override
-    public void complete() {
-      msg.reply(null);
-    }
-
-    @Override
-    public void fail(Throwable err) {
-      msg.fail(0, err.getMessage());
     }
 
     @Override

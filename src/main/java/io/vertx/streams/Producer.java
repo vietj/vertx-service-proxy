@@ -20,6 +20,7 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.streams.impl.ProducerImpl;
+import io.vertx.streams.impl.Transport;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -28,7 +29,11 @@ import io.vertx.streams.impl.ProducerImpl;
 public interface Producer<T> {
 
   static <T> Producer<T> publisher(EventBus bus) {
-    return new ProducerImpl<T>(bus);
+    return new ProducerImpl<>(bus);
+  }
+
+  static <T> Producer<T> publisher(EventBus bus, Transport transport) {
+    return new ProducerImpl<>(bus, transport);
   }
 
   @Fluent

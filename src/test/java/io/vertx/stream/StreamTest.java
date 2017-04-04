@@ -1,11 +1,17 @@
 package io.vertx.stream;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.net.NetServer;
+import io.vertx.core.net.NetServerOptions;
 import io.vertx.streams.ConsumerStream;
 import io.vertx.streams.Producer;
+import io.vertx.streams.impl.EventBusTransport;
+import io.vertx.streams.impl.NetTransport;
+import io.vertx.streams.impl.Transport;
 import io.vertx.test.core.VertxTestBase;
 import org.junit.Test;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -14,13 +20,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class StreamTest extends VertxTestBase {
 
   @Test
-  public void testSimple() throws Exception {
-
+  public void testEventBusStream() throws Exception {
     Vertx vertx = Vertx.vertx();
+    testStream(vertx, new EventBusTransport(vertx.eventBus()));
+    await();
+  }
 
-    Producer<String> producer = Producer.publisher(vertx.eventBus());
+  @Test
+  public void testNetStream() throws Exception {
+    Vertx vertx = Vertx.vertx();
+    NetTransport transport = new NetTransport(vertx, 1234, "localhost");
+    vertx.createNetServer().connectHandler(transport).listen(1234, onSuccess(v -> {
+      try {
+        testStream(vertx, transport);
+      } catch (Exception e) {
+        fail(e);
+      }
+    }));
+    await();
+  }
+
+  private void testStream(Vertx vertx, Transport transport) throws Exception {
+
+    Producer<String> producer = Producer.publisher(vertx.eventBus(), transport);
     producer.handler(sub -> {
-      sub.complete();
       sub.write("foo");
       sub.write("bar");
       sub.write("juu");
@@ -29,7 +52,7 @@ public class StreamTest extends VertxTestBase {
     producer.listen("the-address");
 
     AtomicInteger count = new AtomicInteger();
-    ConsumerStream<String> consumer = ConsumerStream.consumer(vertx.eventBus());
+    ConsumerStream<String> consumer = ConsumerStream.consumer(vertx.eventBus(), transport);
     consumer.handler(event -> {
       int val = count.getAndIncrement();
       switch (val) {
@@ -53,8 +76,6 @@ public class StreamTest extends VertxTestBase {
     consumer.subscribe("the-address", ar -> {
       assertEquals(0, count.getAndIncrement());
     });
-
-    await();
   }
 
   @Test
@@ -66,7 +87,6 @@ public class StreamTest extends VertxTestBase {
       sub.closeHandler(v -> {
         testComplete();
       });
-      sub.complete();
     });
     producer.listen("the-address");
 
@@ -80,5 +100,9 @@ public class StreamTest extends VertxTestBase {
     await();
 
 
+  }
+
+  @Test
+  public void testWebsocketTransport() throws Exception {
   }
 }

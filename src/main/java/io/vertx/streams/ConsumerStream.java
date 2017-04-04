@@ -6,6 +6,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.streams.impl.ConsumerStreamImpl;
+import io.vertx.streams.impl.Transport;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -15,6 +16,10 @@ public interface ConsumerStream<T> extends ReadStream<T> {
 
   static <T> ConsumerStream<T> consumer(EventBus bus) {
     return new ConsumerStreamImpl<>(bus);
+  }
+
+  static <T> ConsumerStream<T> consumer(EventBus bus, Transport transport) {
+    return new ConsumerStreamImpl<>(bus, transport);
   }
 
   void subscribe(String address, Handler<AsyncResult<Void>> doneHandler);

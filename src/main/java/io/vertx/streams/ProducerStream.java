@@ -18,8 +18,4 @@ public interface ProducerStream<T> extends WriteStream<T> {
   @GenIgnore
   Handler<Void> closeHandler();
 
-  void complete();
-
-  void fail(Throwable err);
-
 }

@@ -16,10 +16,7 @@
 package io.vertx.streams.impl;
 
 import io.vertx.core.Handler;
-import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.streams.WriteStream;
 import io.vertx.streams.Producer;
 import io.vertx.streams.ProducerStream;
 
@@ -31,10 +28,15 @@ import java.util.Map;
  */
 public class ProducerImpl<T> implements Producer<T> {
 
-  private final EventBusTransport transport;
+  private final Transport transport;
   private final EventBus bus;
   private Handler<ProducerStream<T>> handler;
   private Map<String, ProducerStream> active = new HashMap<>();
+
+  public ProducerImpl(EventBus bus, Transport transport) {
+    this.bus = bus;
+    this.transport = transport;
+  }
 
   public ProducerImpl(EventBus bus) {
     this.bus = bus;
@@ -55,9 +57,17 @@ public class ProducerImpl<T> implements Producer<T> {
       if (action != null) {
         switch (action) {
           case "open":
-            ProducerStream sub = transport.createStream(msg);
-            active.put(dst, sub);
-            handler.handle(sub);
+            transport.<T>resolveStream(msg, ar -> {
+              if (ar.succeeded()) {
+                ProducerStream<T> sub = ar.result();
+                active.put(dst, sub);
+                msg.reply(null);
+                handler.handle(sub);
+              } else {
+                // Something else ?
+                msg.fail(0, ar.cause().getMessage());
+              }
+            });
             break;
           case "close":
             ProducerStream stream = active.remove(dst);
