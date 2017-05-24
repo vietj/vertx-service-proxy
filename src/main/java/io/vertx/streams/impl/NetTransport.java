@@ -6,12 +6,10 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.impl.CodecManager;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
-import io.vertx.core.parsetools.RecordParser;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
 import io.vertx.streams.ProducerStream;
@@ -145,7 +143,7 @@ public class NetTransport implements Transport, Handler<NetSocket> {
   }
 
   @Override
-  public <T> void bind(WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
+  public <T> void openStream(WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
     String localAddress = UUID.randomUUID().toString();
     handlerMap.put(localAddress, stream -> {
       stream.handler(obj -> {
@@ -159,37 +157,25 @@ public class NetTransport implements Transport, Handler<NetSocket> {
   }
 
   @Override
-  public <T> void resolveStream(Message<String> msg, Handler<AsyncResult<ProducerStream<T>>> completionHandler) {
-    String address = msg.body();
+  public <T> void bindStream(String address, Handler<AsyncResult<WriteStream<T>>> completionHandler) {
     client.connect(port, host, ar -> {
       if (ar.succeeded()) {
         NetSocket socket = ar.result();
         byte[] bytes = address.getBytes(StandardCharsets.UTF_8);
         socket.write(Buffer.buffer().appendInt(address.length()).appendBytes(bytes));
-        completionHandler.handle(Future.succeededFuture(new ProducerStreamImpl<>(socket)));
+        completionHandler.handle(Future.succeededFuture(new NetStreamImpl<>(socket)));
       } else {
         completionHandler.handle(Future.failedFuture(ar.cause()));
       }
     });
   }
 
-  private class ProducerStreamImpl<T> implements ProducerStream<T> {
-
+  private class NetStreamImpl<T> implements WriteStream<T> {
 
     private final NetSocket socket;
 
-    public ProducerStreamImpl(NetSocket socket) {
+    public NetStreamImpl(NetSocket socket) {
       this.socket = socket;
-    }
-
-    @Override
-    public ProducerStream<T> closeHandler(Handler<Void> handler) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Handler<Void> closeHandler() {
-      throw new UnsupportedOperationException();
     }
 
     @Override

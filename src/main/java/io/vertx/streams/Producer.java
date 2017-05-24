@@ -28,17 +28,17 @@ import io.vertx.streams.impl.Transport;
 @VertxGen
 public interface Producer<T> {
 
-  static <T> Producer<T> publisher(EventBus bus) {
+  static <T> Producer<T> producer(EventBus bus) {
     return new ProducerImpl<>(bus);
   }
 
-  static <T> Producer<T> publisher(EventBus bus, Transport transport) {
+  static <T> Producer<T> producer(EventBus bus, Transport transport) {
     return new ProducerImpl<>(bus, transport);
   }
 
   @Fluent
   Producer<T> handler(Handler<ProducerStream<T>> resolver);
 
-  void listen(String address);
+  void register(String address);
 
 }

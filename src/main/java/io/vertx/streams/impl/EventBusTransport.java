@@ -5,10 +5,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.streams.WriteStream;
-import io.vertx.streams.ProducerStream;
 
 import java.util.UUID;
 
@@ -23,7 +21,7 @@ public class EventBusTransport implements Transport {
     this.bus = bus;
   }
 
-  public <T> void bind(WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
+  public <T> void openStream(WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
     String uuid = UUID.randomUUID().toString();
     MessageConsumer<T> consumer = bus.consumer(uuid, msg -> {
       String action = msg.headers().get("action");
@@ -43,18 +41,16 @@ public class EventBusTransport implements Transport {
   }
 
   @Override
-  public <T> void resolveStream(Message<String> msg, Handler<AsyncResult<ProducerStream<T>>> completionHandler) {
-    completionHandler.handle(Future.succeededFuture(new ProducerStreamImpl<T>(msg)));
+  public <T> void bindStream(String address, Handler<AsyncResult<WriteStream<T>>> completionHandler) {
+    completionHandler.handle(Future.succeededFuture(new EventBusStreamImpl<T>(address)));
   }
 
-  private class ProducerStreamImpl<T> implements ProducerStream<T> {
+  private class EventBusStreamImpl<T> implements WriteStream<T> {
 
-//    final Message<String> msg;
-    final String dst;
-    Handler<Void> closeHandler;
+    final String address;
 
-    public ProducerStreamImpl(Message<String> msg) {
-      this.dst = msg.body();
+    public EventBusStreamImpl(String address) {
+      this.address = address;
     }
 
     @Override
@@ -64,13 +60,13 @@ public class EventBusTransport implements Transport {
 
     @Override
     public WriteStream<T> write(T t) {
-      bus.send(dst, t);
+      bus.send(address, t);
       return this;
     }
 
     @Override
     public void end() {
-      bus.send(dst, null, new DeliveryOptions().addHeader("action", "end"));
+      bus.send(address, null, new DeliveryOptions().addHeader("action", "end"));
     }
 
     @Override
@@ -88,15 +84,5 @@ public class EventBusTransport implements Transport {
       return this;
     }
 
-    @Override
-    public ProducerStream<T> closeHandler(Handler<Void> handler) {
-      closeHandler = handler;
-      return this;
-    }
-
-    @Override
-    public Handler<Void> closeHandler() {
-      return closeHandler;
-    }
   }
 }

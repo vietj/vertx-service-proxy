@@ -3,10 +3,9 @@ package io.vertx.streams;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.streams.ReadStream;
-import io.vertx.streams.impl.ConsumerStreamImpl;
-import io.vertx.streams.impl.Transport;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -14,15 +13,10 @@ import io.vertx.streams.impl.Transport;
 @VertxGen
 public interface ConsumerStream<T> extends ReadStream<T> {
 
-  static <T> ConsumerStream<T> consumer(EventBus bus) {
-    return new ConsumerStreamImpl<>(bus);
+  static <T> void open(EventBus bus, String address, Object body, DeliveryOptions options, Handler<AsyncResult<ConsumerStream<T>>> handler) {
+    Consumer<T> consumer = Consumer.consumer(bus, address);
+    consumer.open(body, options, handler);
   }
-
-  static <T> ConsumerStream<T> consumer(EventBus bus, Transport transport) {
-    return new ConsumerStreamImpl<>(bus, transport);
-  }
-
-  void subscribe(String address, Handler<AsyncResult<Void>> doneHandler);
 
   @Override
   ConsumerStream<T> exceptionHandler(Handler<Throwable> handler);
