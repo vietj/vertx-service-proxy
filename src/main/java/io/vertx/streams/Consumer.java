@@ -26,4 +26,7 @@ public interface Consumer<T> {
 
   void openReadStream(Handler<AsyncResult<CloseableReadStream<T>>> doneHandler);
 
+  void openWriteStream(Object body, DeliveryOptions options, Handler<AsyncResult<CloseableWriteStream<T>>> doneHandler);
+
+  void openWriteStream(Handler<AsyncResult<CloseableWriteStream<T>>> doneHandler);
 }

@@ -55,23 +55,34 @@ public class ProducerImpl<T> implements Producer<T>, Handler<Message<Object>> {
 
   @Override
   public void handle(Message<Object> msg) {
-    String streamAddress = msg.headers().get("addr");
+    String addr = msg.headers().get("addr");
     String action = msg.headers().get("stream");
     if (action != null) {
       switch (action) {
         case "open":
-          mgr.openReadStream(streamAddress, ar -> {
-            if (ar.succeeded()) {
-              readStreamHandler.handle(ar.result());
-              msg.reply(null);
-            } else {
-              // Something else ?
-              msg.fail(0, ar.cause().getMessage());
-            }
-          });
+          if (addr != null) {
+            mgr.openReadStream(addr, ar -> {
+              if (ar.succeeded()) {
+                readStreamHandler.handle(ar.result());
+                msg.reply(null);
+              } else {
+                // Something else ?
+                msg.fail(0, ar.cause().getMessage());
+              }
+            });
+          } else {
+            addr = mgr.<T>openWriteStream(ar -> {
+              if (ar.succeeded()) {
+                writeStreamHandler.handle(ar.result());
+              } else {
+                throw new UnsupportedOperationException();
+              }
+            });
+            msg.reply(addr);
+          }
           break;
         case "close":
-          mgr.close(streamAddress);
+          mgr.close(addr);
           break;
       }
     }
