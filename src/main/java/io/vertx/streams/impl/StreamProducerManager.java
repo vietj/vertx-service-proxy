@@ -20,7 +20,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.streams.WriteStream;
-import io.vertx.streams.ProducerStream;
+import io.vertx.streams.CloseableWriteStream;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,8 +41,8 @@ public class StreamProducerManager<T> {
     this.transport = transport;
   }
 
-  public void open(String addr, Handler<AsyncResult<ProducerStream<T>>> fut) {
-    transport.<T>bindStream(addr, ar -> {
+  public void openReadStream(String addr, Handler<AsyncResult<CloseableWriteStream<T>>> fut) {
+    transport.<T>connect(addr, ar -> {
       if (ar.succeeded()) {
         WriteStream<T> sub = ar.result();
         ProducerStreamImpl<T> stream = new ProducerStreamImpl<>(sub);
@@ -64,7 +64,7 @@ public class StreamProducerManager<T> {
     }
   }
 
-  class ProducerStreamImpl<T> implements ProducerStream<T> {
+  class ProducerStreamImpl<T> implements CloseableWriteStream<T> {
 
     private final WriteStream<T> stream;
     private Handler<Void> closeHandler;
@@ -74,7 +74,7 @@ public class StreamProducerManager<T> {
     }
 
     @Override
-    public ProducerStream<T> closeHandler(Handler<Void> handler) {
+    public CloseableWriteStream<T> closeHandler(Handler<Void> handler) {
       closeHandler = handler;
       return this;
     }

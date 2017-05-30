@@ -21,14 +21,14 @@ public class EventBusTransport implements Transport {
     this.bus = bus;
   }
 
-  public <T> void openStream(WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
+  public <T> void bind(WriteStream<T> stream, Handler<AsyncResult<String>> completionHandler) {
     String uuid = UUID.randomUUID().toString();
     MessageConsumer<T> consumer = bus.consumer(uuid, msg -> {
       String action = msg.headers().get("action");
       if ("end".equals(action)) {
-        to.end();
+        stream.end();
       } else if (action == null) {
-        to.write(msg.body());
+        stream.write(msg.body());
       }
     });
     consumer.completionHandler(ar1 -> {
@@ -41,7 +41,7 @@ public class EventBusTransport implements Transport {
   }
 
   @Override
-  public <T> void bindStream(String address, Handler<AsyncResult<WriteStream<T>>> completionHandler) {
+  public <T> void connect(String address, Handler<AsyncResult<WriteStream<T>>> completionHandler) {
     completionHandler.handle(Future.succeededFuture(new EventBusStreamImpl<T>(address)));
   }
 

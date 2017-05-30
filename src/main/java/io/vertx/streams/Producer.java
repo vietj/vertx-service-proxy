@@ -37,7 +37,10 @@ public interface Producer<T> {
   }
 
   @Fluent
-  Producer<T> handler(Handler<ProducerStream<T>> resolver);
+  Producer<T> readStreamHandler(Handler<CloseableWriteStream<T>> handler);
+
+  @Fluent
+  Producer<T> writeStreamHandler(Handler<CloseableReadStream<T>> handler);
 
   void register(String address);
 

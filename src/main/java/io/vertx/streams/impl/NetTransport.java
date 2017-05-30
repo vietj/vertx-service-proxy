@@ -12,7 +12,6 @@ import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
-import io.vertx.streams.ProducerStream;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -143,7 +142,7 @@ public class NetTransport implements Transport, Handler<NetSocket> {
   }
 
   @Override
-  public <T> void openStream(WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
+  public <T> void bind(WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
     String localAddress = UUID.randomUUID().toString();
     handlerMap.put(localAddress, stream -> {
       stream.handler(obj -> {
@@ -157,7 +156,7 @@ public class NetTransport implements Transport, Handler<NetSocket> {
   }
 
   @Override
-  public <T> void bindStream(String address, Handler<AsyncResult<WriteStream<T>>> completionHandler) {
+  public <T> void connect(String address, Handler<AsyncResult<WriteStream<T>>> completionHandler) {
     client.connect(port, host, ar -> {
       if (ar.succeeded()) {
         NetSocket socket = ar.result();

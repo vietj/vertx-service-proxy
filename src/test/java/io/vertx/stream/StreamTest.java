@@ -40,7 +40,7 @@ public class StreamTest extends VertxTestBase {
   private void testStream(Vertx vertx, Transport transport) throws Exception {
 
     Producer<String> producer = Producer.producer(vertx.eventBus(), transport);
-    producer.handler(sub -> {
+    producer.readStreamHandler(sub -> {
       sub.write("foo");
       sub.write("bar");
       sub.write("juu");
@@ -50,7 +50,7 @@ public class StreamTest extends VertxTestBase {
 
     AtomicInteger count = new AtomicInteger();
     Consumer<String> consumer = Consumer.consumer(vertx.eventBus(), "the-address", transport);
-    consumer.open(onSuccess(stream -> {
+    consumer.openReadStream(onSuccess(stream -> {
       assertEquals(0, count.getAndIncrement());
       stream.handler(event -> {
         int val = count.getAndIncrement();
@@ -80,7 +80,7 @@ public class StreamTest extends VertxTestBase {
     Vertx vertx = Vertx.vertx();
 
     Producer<String> producer = Producer.producer(vertx.eventBus());
-    producer.handler(sub -> {
+    producer.readStreamHandler(sub -> {
       sub.closeHandler(v -> {
         testComplete();
       });
@@ -88,7 +88,7 @@ public class StreamTest extends VertxTestBase {
     producer.register("the-address");
 
     Consumer<String> consumer = Consumer.consumer(vertx.eventBus(), "the-address");
-    consumer.open(onSuccess(stream -> {
+    consumer.openReadStream(onSuccess(stream -> {
       stream.handler(event -> {
         fail();
       });

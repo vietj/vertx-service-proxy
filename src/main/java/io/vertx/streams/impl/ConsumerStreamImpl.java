@@ -5,14 +5,14 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.streams.WriteStream;
-import io.vertx.streams.ConsumerStream;
+import io.vertx.streams.CloseableReadStream;
 
 import java.util.LinkedList;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ConsumerStreamImpl<T> implements ConsumerStream<T> {
+public class ConsumerStreamImpl<T> implements CloseableReadStream<T> {
 
   private static final Handler NULL_HANDLER = o -> {};
 
@@ -40,7 +40,7 @@ public class ConsumerStreamImpl<T> implements ConsumerStream<T> {
       throw new IllegalArgumentException();
     }
     this.status = CONNECTING;
-    consumer.transport.openStream(new WriteStream<T>() {
+    consumer.transport.bind(new WriteStream<T>() {
       @Override
       public WriteStream<T> exceptionHandler(Handler<Throwable> handler) {
         return this;
@@ -118,28 +118,28 @@ public class ConsumerStreamImpl<T> implements ConsumerStream<T> {
   }
 
   @Override
-  public ConsumerStream<T> exceptionHandler(Handler<Throwable> handler) {
+  public CloseableReadStream<T> exceptionHandler(Handler<Throwable> handler) {
     return this;
   }
 
   @Override
-  public ConsumerStream<T> handler(Handler<T> h) {
+  public CloseableReadStream<T> handler(Handler<T> h) {
     handler = h;
     return this;
   }
 
   @Override
-  public ConsumerStream<T> pause() {
+  public CloseableReadStream<T> pause() {
     return this;
   }
 
   @Override
-  public ConsumerStream<T> resume() {
+  public CloseableReadStream<T> resume() {
     return this;
   }
 
   @Override
-  public ConsumerStream<T> endHandler(Handler<Void> handler) {
+  public CloseableReadStream<T> endHandler(Handler<Void> handler) {
     endHandler = handler;
     return this;
   }

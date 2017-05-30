@@ -22,8 +22,8 @@ public interface Consumer<T> {
     return new ConsumerImpl<T>(bus, address, transport);
   }
 
-  void open(Object body, DeliveryOptions options, Handler<AsyncResult<ConsumerStream<T>>> doneHandler);
+  void openReadStream(Object body, DeliveryOptions options, Handler<AsyncResult<CloseableReadStream<T>>> doneHandler);
 
-  void open(Handler<AsyncResult<ConsumerStream<T>>> doneHandler);
+  void openReadStream(Handler<AsyncResult<CloseableReadStream<T>>> doneHandler);
 
 }

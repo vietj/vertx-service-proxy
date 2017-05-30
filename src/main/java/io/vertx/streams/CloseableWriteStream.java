@@ -9,9 +9,9 @@ import io.vertx.core.streams.WriteStream;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 @VertxGen
-public interface ProducerStream<T> extends WriteStream<T> {
+public interface CloseableWriteStream<T> extends WriteStream<T> {
 
   @Fluent
-  ProducerStream<T> closeHandler(Handler<Void> handler);
+  CloseableWriteStream<T> closeHandler(Handler<Void> handler);
 
 }
