@@ -113,7 +113,7 @@ res -> {\n
 res -> {\n
 @{ind}              if (res.succeeded()) {\n
 @{ind}                io.vertx.core.streams.ReadStream rs = res.result();\n
-@{ind}                bilto.open(msg.headers().get("addr"), ar -> {\n
+@{ind}                bilto.openReadStream(msg.headers().get("addr"), ar -> {\n
 @{ind}                  if (ar.succeeded()) {\n
 @{ind}                    io.vertx.core.streams.WriteStream ws = ar.result();\n
 @{ind}                    io.vertx.streams.StreamHelper.pipe(rs, ws);\n

@@ -16,15 +16,18 @@
 
 package io.vertx.serviceproxy.testmodel;
 
+import io.vertx.serviceproxy.testmodel.TestService;
 import io.vertx.core.Vertx;
 import io.vertx.core.Handler;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.eventbus.DeliveryOptions;
+import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
-
+import java.util.Collection;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +39,20 @@ import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
 import io.vertx.serviceproxy.ServiceException;
 import io.vertx.serviceproxy.ServiceExceptionMessageCodec;
+import io.vertx.serviceproxy.testmodel.TestService;
+import io.vertx.serviceproxy.testmodel.SomeEnum;
+import io.vertx.core.Vertx;
+import java.util.Set;
+import io.vertx.serviceproxy.testmodel.TestConnection;
+import io.vertx.core.json.JsonArray;
+import io.vertx.serviceproxy.testmodel.TestDataObject;
+import java.util.List;
+import java.util.Map;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.AsyncResult;
+import io.vertx.serviceproxy.testmodel.TestConnectionWithCloseFuture;
+import io.vertx.core.Handler;
 
 /*
   Generated Proxy code - DO NOT EDIT
@@ -44,7 +61,7 @@ import io.vertx.serviceproxy.ServiceExceptionMessageCodec;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class TestServiceVertxProxyHandler extends ProxyHandler {
 
-  public static final long DEFAULT_CONNECTION_TIMEOUT = 5 * 60; // 5 minutes
+  public static final long DEFAULT_CONNECTION_TIMEOUT = 5 * 60; // 5 minutes 
 
   private final Vertx vertx;
   private final TestService service;

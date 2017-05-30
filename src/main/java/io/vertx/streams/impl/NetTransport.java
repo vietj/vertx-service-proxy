@@ -61,7 +61,7 @@ public class NetTransport implements Transport, Handler<NetSocket> {
           if (received.length() >= to) {
             String address = received.slice(4, to).toString(StandardCharsets.UTF_8);
             Handler<ReadStream<Object>> handler = handlerMap.get(address);
-            rs = new ReadStreamImpl();
+            rs = new ReadStreamImpl(netSocket);
             ref.set(rs);
             handler.handle(rs);
             rs.handleChunk(received.slice(to, received.length()));
@@ -78,6 +78,11 @@ public class NetTransport implements Transport, Handler<NetSocket> {
     private Handler<Object> handler;
     private Handler<Void> endHandler;
     private Buffer pending = Buffer.buffer();
+    private final NetSocket socket;
+
+    public ReadStreamImpl(NetSocket socket) {
+      this.socket = socket;
+    }
 
     void handleChunk(Buffer chunk) {
       pending.appendBuffer(chunk);
@@ -126,12 +131,14 @@ public class NetTransport implements Transport, Handler<NetSocket> {
 
     @Override
     public ReadStream<Object> pause() {
-      throw new UnsupportedOperationException();
+      socket.pause();
+      return this;
     }
 
     @Override
     public ReadStream<Object> resume() {
-      throw new UnsupportedOperationException();
+      socket.resume();
+      return this;
     }
 
     @Override
@@ -153,6 +160,16 @@ public class NetTransport implements Transport, Handler<NetSocket> {
       });
     });
     completionHandler.handle(Future.succeededFuture(localAddress));
+  }
+
+  @Override
+  public <T> String bind(Handler<AsyncResult<ReadStream<T>>> completionHandler) {
+    String localAddress = UUID.randomUUID().toString();
+    handlerMap.put(localAddress, stream -> {
+      completionHandler.handle(Future.succeededFuture((ReadStream<T>) stream));
+    });
+
+    return localAddress;
   }
 
   @Override

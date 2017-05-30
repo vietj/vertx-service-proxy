@@ -16,6 +16,7 @@
 
 package io.vertx.serviceproxy.testmodel;
 
+import io.vertx.serviceproxy.testmodel.TestService;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.Future;
@@ -31,10 +32,20 @@ import java.util.function.Function;
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ServiceException;
 import io.vertx.serviceproxy.ServiceExceptionMessageCodec;
+import io.vertx.serviceproxy.testmodel.TestService;
+import io.vertx.serviceproxy.testmodel.SomeEnum;
+import io.vertx.core.Vertx;
+import java.util.Set;
+import io.vertx.serviceproxy.testmodel.TestConnection;
+import io.vertx.core.json.JsonArray;
+import io.vertx.serviceproxy.testmodel.TestDataObject;
+import java.util.List;
+import java.util.Map;
 import io.vertx.core.streams.ReadStream;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
+import io.vertx.serviceproxy.testmodel.TestConnectionWithCloseFuture;
 import io.vertx.core.Handler;
-import io.vertx.streams.CloseableReadStream;
 
 /*
   Generated Proxy code - DO NOT EDIT
@@ -134,7 +145,7 @@ public class TestServiceVertxEBProxy implements TestService {
   }
 
   public void createStream(String str, Handler<AsyncResult<ReadStream<String>>> resultHandler) {
-CloseableReadStream.open(_vertx.eventBus(), _address, new io.vertx.core.json.JsonObject(), new io.vertx.core.eventbus.DeliveryOptions().addHeader("action", "createStream"), ar -> {
+io.vertx.streams.CloseableReadStream.open(_vertx.eventBus(), _address, new io.vertx.core.json.JsonObject(), new io.vertx.core.eventbus.DeliveryOptions().addHeader("action", "createStream"), ar -> {
   if (ar.succeeded()) {
     resultHandler.handle(io.vertx.core.Future.succeededFuture((io.vertx.core.streams.ReadStream)ar.result()));
   } else {
@@ -1308,42 +1319,42 @@ CloseableReadStream.open(_vertx.eventBus(), _address, new io.vertx.core.json.Jso
   }
 
   private <T> Map<String, T> convertMap(Map map) {
-    if (map.isEmpty()) {
-      return (Map<String, T>) map;
-    }
-
-    Object elem = map.values().stream().findFirst().get();
-    if (!(elem instanceof Map) && !(elem instanceof List)) {
-      return (Map<String, T>) map;
-    } else {
-      Function<Object, T> converter;
-      if (elem instanceof List) {
-        converter = object -> (T) new JsonArray((List) object);
-      } else {
-        converter = object -> (T) new JsonObject((Map) object);
-      }
-      return ((Map<String, T>) map).entrySet()
-       .stream()
-       .collect(Collectors.toMap(Map.Entry::getKey, converter::apply));
-    }
+    if (map.isEmpty()) { 
+      return (Map<String, T>) map; 
+    } 
+     
+    Object elem = map.values().stream().findFirst().get(); 
+    if (!(elem instanceof Map) && !(elem instanceof List)) { 
+      return (Map<String, T>) map; 
+    } else { 
+      Function<Object, T> converter; 
+      if (elem instanceof List) { 
+        converter = object -> (T) new JsonArray((List) object); 
+      } else { 
+        converter = object -> (T) new JsonObject((Map) object); 
+      } 
+      return ((Map<String, T>) map).entrySet() 
+       .stream() 
+       .collect(Collectors.toMap(Map.Entry::getKey, converter::apply)); 
+    } 
   }
   private <T> List<T> convertList(List list) {
-    if (list.isEmpty()) {
-          return (List<T>) list;
-        }
-
-    Object elem = list.get(0);
-    if (!(elem instanceof Map) && !(elem instanceof List)) {
-      return (List<T>) list;
-    } else {
-      Function<Object, T> converter;
-      if (elem instanceof List) {
-        converter = object -> (T) new JsonArray((List) object);
-      } else {
-        converter = object -> (T) new JsonObject((Map) object);
-      }
-      return (List<T>) list.stream().map(converter).collect(Collectors.toList());
-    }
+    if (list.isEmpty()) { 
+          return (List<T>) list; 
+        } 
+     
+    Object elem = list.get(0); 
+    if (!(elem instanceof Map) && !(elem instanceof List)) { 
+      return (List<T>) list; 
+    } else { 
+      Function<Object, T> converter; 
+      if (elem instanceof List) { 
+        converter = object -> (T) new JsonArray((List) object); 
+      } else { 
+        converter = object -> (T) new JsonObject((Map) object); 
+      } 
+      return (List<T>) list.stream().map(converter).collect(Collectors.toList()); 
+    } 
   }
   private <T> Set<T> convertSet(List list) {
     return new HashSet<T>(convertList(list));
