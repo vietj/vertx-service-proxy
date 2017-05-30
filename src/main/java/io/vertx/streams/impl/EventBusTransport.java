@@ -23,25 +23,6 @@ public class EventBusTransport implements Transport {
     this.bus = bus;
   }
 
-  public <T> void bind(WriteStream<T> stream, Handler<AsyncResult<String>> completionHandler) {
-    String uuid = UUID.randomUUID().toString();
-    MessageConsumer<T> consumer = bus.consumer(uuid, msg -> {
-      String action = msg.headers().get("action");
-      if ("end".equals(action)) {
-        stream.end();
-      } else if (action == null) {
-        stream.write(msg.body());
-      }
-    });
-    consumer.completionHandler(ar1 -> {
-      if (ar1.succeeded()) {
-        completionHandler.handle(Future.succeededFuture(uuid));
-      } else {
-        completionHandler.handle(Future.failedFuture(ar1.cause()));
-      }
-    });
-  }
-
   @Override
   public <T> String bind(Handler<AsyncResult<ReadStream<T>>> completionHandler) {
     String uuid = UUID.randomUUID().toString();

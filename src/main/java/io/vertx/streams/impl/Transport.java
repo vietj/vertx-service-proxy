@@ -12,8 +12,6 @@ import io.vertx.core.streams.WriteStream;
 @VertxGen
 public interface Transport {
 
-  <T> void bind(WriteStream<T> stream, Handler<AsyncResult<String>> completionHandler);
-
   <T> String bind(Handler<AsyncResult<ReadStream<T>>> completionHandler);
 
   <T> void connect(String address, Handler<AsyncResult<WriteStream<T>>> completionHandler);

@@ -149,26 +149,11 @@ public class NetTransport implements Transport, Handler<NetSocket> {
   }
 
   @Override
-  public <T> void bind(WriteStream<T> to, Handler<AsyncResult<String>> completionHandler) {
-    String localAddress = UUID.randomUUID().toString();
-    handlerMap.put(localAddress, stream -> {
-      stream.handler(obj -> {
-        to.write((T) obj);
-      });
-      stream.endHandler(v -> {
-        to.end();
-      });
-    });
-    completionHandler.handle(Future.succeededFuture(localAddress));
-  }
-
-  @Override
   public <T> String bind(Handler<AsyncResult<ReadStream<T>>> completionHandler) {
     String localAddress = UUID.randomUUID().toString();
     handlerMap.put(localAddress, stream -> {
       completionHandler.handle(Future.succeededFuture((ReadStream<T>) stream));
     });
-
     return localAddress;
   }
 
