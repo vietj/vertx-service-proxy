@@ -16,5 +16,11 @@
 @ModuleGen(name = "vertx-streams", groupPackage = "io.vertx")
 package io.vertx.streams;
 
+/**
+ * todo :
+ * - detect dead streams (ping, etc...)
+ * - open simultanously a read stream and a write stream
+ * - write stream with proxy
+ */
 import io.vertx.codegen.annotations.ModuleGen;
 import io.vertx.docgen.Document;
