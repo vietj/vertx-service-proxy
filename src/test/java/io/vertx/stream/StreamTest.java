@@ -1,6 +1,8 @@
 package io.vertx.stream;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.net.NetSocket;
 import io.vertx.streams.Consumer;
 import io.vertx.streams.Producer;
 import io.vertx.streams.impl.EventBusTransport;
@@ -67,6 +69,10 @@ public class StreamTest extends VertxTestBase {
         }
       });
       stream.endHandler(v -> {
+        if (stream instanceof EventBusTransport.MessageReadStream) {
+          MessageConsumer mc = ((EventBusTransport.MessageReadStream) stream).consumer();
+          assertFalse(mc.isRegistered());
+        }
         assertEquals(4, count.getAndIncrement());
         testComplete();
       });

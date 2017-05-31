@@ -15,54 +15,16 @@ public class ConsumerStream<T> {
   private static final int DISCONNECTED = 0, CONNECTING = 1, CONNECTED = 2;
 
   private final ConsumerImpl<T> consumer;
-  private final ReadStreamImpl readStream;
+  private final Handler<AsyncResult<ReadStream<T>>> readStreamHandler;
   private final Handler<AsyncResult<WriteStream<T>>> writeStreamHandler;
   private String localAddress;
   private int status = DISCONNECTED;
-
-  class ReadStreamImpl implements ReadStream<T> {
-
-    final Handler<AsyncResult<ReadStream<T>>> doneHandler;
-    Handler<T> handler;
-    Handler<Void> endHandler;
-
-    public ReadStreamImpl(Handler<AsyncResult<ReadStream<T>>> doneHandler) {
-      this.doneHandler = doneHandler;
-    }
-
-    @Override
-    public ReadStream<T> exceptionHandler(Handler<Throwable> handler) {
-      return this;
-    }
-
-    @Override
-    public ReadStream<T> handler(Handler<T> h) {
-      handler = h;
-      return this;
-    }
-
-    @Override
-    public ReadStream<T> pause() {
-      return this;
-    }
-
-    @Override
-    public ReadStream<T> resume() {
-      return this;
-    }
-
-    @Override
-    public ReadStream<T> endHandler(Handler<Void> handler) {
-      endHandler = handler;
-      return this;
-    }
-  }
 
   public ConsumerStream(ConsumerImpl<T> consumer,
                         Handler<AsyncResult<ReadStream<T>>> readStreamHandler,
                         Handler<AsyncResult<WriteStream<T>>> writeStreamHandler) {
     this.consumer = consumer;
-    this.readStream = readStreamHandler != null ? new ReadStreamImpl(readStreamHandler) : null;
+    this.readStreamHandler = readStreamHandler;
     this.writeStreamHandler = writeStreamHandler;
   }
 
@@ -75,7 +37,7 @@ public class ConsumerStream<T> {
       throw new IllegalArgumentException();
     }
     this.status = CONNECTING;
-    if (readStream != null) {
+    if (readStreamHandler != null) {
       Future<ReadStream<T>> fut = Future.future();
       localAddress = consumer.transport.<T>bind(ar -> {
         if (ar.failed()) {
@@ -96,12 +58,10 @@ public class ConsumerStream<T> {
           fut.setHandler(ar2 -> {
             if (ar2.succeeded()) {
               ReadStream<T> stream = ar2.result();
-              readStream.doneHandler.handle(Future.succeededFuture(readStream));
-              stream.handler(readStream.handler);
-              stream.endHandler(readStream.endHandler);
+              readStreamHandler.handle(Future.succeededFuture(stream));
               stream.resume();
             } else {
-              readStream.doneHandler.handle(Future.failedFuture(ar2.cause()));
+              readStreamHandler.handle(Future.failedFuture(ar2.cause()));
             }
           });
         }

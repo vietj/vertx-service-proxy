@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
@@ -26,20 +27,14 @@ public class EventBusTransport implements Transport {
   @Override
   public <T> String bind(Handler<AsyncResult<ReadStream<T>>> completionHandler) {
     String uuid = UUID.randomUUID().toString();
-    TheStream<T> stream = new TheStream<T>(uuid);
-    MessageConsumer<T> consumer = bus.consumer(uuid, msg -> {
-      String action = msg.headers().get("action");
-      if ("end".equals(action)) {
-        stream.write((T) END_SENTINEL);
-      } else if (action == null) {
-        stream.write(msg.body());
-      }
-    });
-    consumer.completionHandler(ar1 -> {
-      if (ar1.succeeded()) {
+    MessageConsumer<T> consumer = bus.consumer(uuid);
+    MessageReadStream<T> stream = new MessageReadStream<T>(consumer);
+    consumer.handler(stream::handle);
+    consumer.completionHandler(ar -> {
+      if (ar.succeeded()) {
         completionHandler.handle(Future.succeededFuture(stream));
       } else {
-        completionHandler.handle(Future.failedFuture(ar1.cause()));
+        completionHandler.handle(Future.failedFuture(ar.cause()));
       }
     });
     return uuid;
@@ -47,16 +42,30 @@ public class EventBusTransport implements Transport {
 
   private static final Object END_SENTINEL = new Object();
 
-  static class TheStream<T> implements ReadStream<T> {
+  public class MessageReadStream<T> implements ReadStream<T> {
 
-    private final String address;
+    private MessageConsumer<T> consumer;
     private boolean paused;
     private LinkedList<T> pending = new LinkedList<>();
     private Handler<T> handler;
     private Handler<Void> endHandler;
 
-    public TheStream(String address) {
-      this.address = address;
+    public MessageReadStream(MessageConsumer<T> consumer) {
+      this.consumer = consumer;
+    }
+
+    public MessageConsumer<T> consumer() {
+      return consumer;
+    }
+
+    void handle(Message<T> msg) {
+      String action = msg.headers().get("action");
+      if ("end".equals(action)) {
+        consumer.unregister();
+        write((T) END_SENTINEL);
+      } else if (action == null) {
+        write(msg.body());
+      }
     }
 
     @Override

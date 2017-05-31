@@ -40,9 +40,9 @@ public class NetTransport implements Transport, Handler<NetSocket> {
   @Override
   public void handle(NetSocket netSocket) {
     Buffer received = Buffer.buffer();
-    AtomicReference<ReadStreamImpl> ref = new AtomicReference<>();
+    AtomicReference<SocketReadStream> ref = new AtomicReference<>();
     netSocket.closeHandler(v -> {
-      ReadStreamImpl rs = ref.get();
+      SocketReadStream rs = ref.get();
       if (rs == null) {
         // Handle me
       } else {
@@ -52,7 +52,7 @@ public class NetTransport implements Transport, Handler<NetSocket> {
       }
     });
     netSocket.handler(buff -> {
-      ReadStreamImpl rs = ref.get();
+      SocketReadStream rs = ref.get();
       if (rs == null) {
         received.appendBuffer(buff);
         if (received.length() >= 4) {
@@ -61,7 +61,7 @@ public class NetTransport implements Transport, Handler<NetSocket> {
           if (received.length() >= to) {
             String address = received.slice(4, to).toString(StandardCharsets.UTF_8);
             Handler<ReadStream<Object>> handler = handlerMap.get(address);
-            rs = new ReadStreamImpl(netSocket);
+            rs = new SocketReadStream(netSocket);
             ref.set(rs);
             handler.handle(rs);
             rs.handleChunk(received.slice(to, received.length()));
@@ -73,15 +73,19 @@ public class NetTransport implements Transport, Handler<NetSocket> {
     });
   }
 
-  private class ReadStreamImpl implements ReadStream<Object> {
+  public class SocketReadStream<T> implements ReadStream<T> {
 
-    private Handler<Object> handler;
+    private Handler<T> handler;
     private Handler<Void> endHandler;
     private Buffer pending = Buffer.buffer();
-    private final NetSocket socket;
+    private final NetSocket netSocket;
 
-    public ReadStreamImpl(NetSocket socket) {
-      this.socket = socket;
+    public SocketReadStream(NetSocket netSocket) {
+      this.netSocket = netSocket;
+    }
+
+    public NetSocket netSocket() {
+      return netSocket;
     }
 
     void handleChunk(Buffer chunk) {
@@ -114,35 +118,35 @@ public class NetTransport implements Transport, Handler<NetSocket> {
       }
       Object obj = codec.transform(codec.decodeFromWire(pos, buffer));
       if (handler != null) {
-        handler.handle(obj);
+        handler.handle((T) obj);
       }
     }
 
     @Override
-    public ReadStream<Object> exceptionHandler(Handler<Throwable> handler) {
+    public ReadStream<T> exceptionHandler(Handler<Throwable> handler) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public ReadStream<Object> handler(Handler<Object> handler) {
+    public ReadStream<T> handler(Handler<T> handler) {
       this.handler = handler;
       return this;
     }
 
     @Override
-    public ReadStream<Object> pause() {
-      socket.pause();
+    public ReadStream<T> pause() {
+      netSocket.pause();
       return this;
     }
 
     @Override
-    public ReadStream<Object> resume() {
-      socket.resume();
+    public ReadStream<T> resume() {
+      netSocket.resume();
       return this;
     }
 
     @Override
-    public ReadStream<Object> endHandler(Handler<Void> handler) {
+    public ReadStream<T> endHandler(Handler<Void> handler) {
       endHandler = handler;
       return this;
     }
