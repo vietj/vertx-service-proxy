@@ -4,9 +4,9 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.streams.CloseableWriteStream;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.streams.Consumer;
-import io.vertx.streams.CloseableReadStream;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -30,25 +30,25 @@ public class ConsumerImpl<T> implements Consumer<T> {
   }
 
   @Override
-  public void openReadStream(Object body, DeliveryOptions options, Handler<AsyncResult<CloseableReadStream<T>>> doneHandler) {
+  public void openReadStream(Object body, DeliveryOptions options, Handler<AsyncResult<ReadStream<T>>> doneHandler) {
     ConsumerStream<T> stream = new ConsumerStream<>(this, doneHandler, null);
     stream.subscribe(body, options);
   }
 
   @Override
-  public void openReadStream(Handler<AsyncResult<CloseableReadStream<T>>> doneHandler) {
+  public void openReadStream(Handler<AsyncResult<ReadStream<T>>> doneHandler) {
     ConsumerStream<T> stream = new ConsumerStream<>(this, doneHandler, null);
     stream.subscribe();
   }
 
   @Override
-  public void openWriteStream(Object body, DeliveryOptions options, Handler<AsyncResult<CloseableWriteStream<T>>> doneHandler) {
+  public void openWriteStream(Object body, DeliveryOptions options, Handler<AsyncResult<WriteStream<T>>> doneHandler) {
     ConsumerStream<T> stream = new ConsumerStream<>(this, null, doneHandler);
     stream.subscribe(body, options);
   }
 
   @Override
-  public void openWriteStream(Handler<AsyncResult<CloseableWriteStream<T>>> doneHandler) {
+  public void openWriteStream(Handler<AsyncResult<WriteStream<T>>> doneHandler) {
     ConsumerStream<T> stream = new ConsumerStream<>(this, null, doneHandler);
     stream.subscribe();
   }

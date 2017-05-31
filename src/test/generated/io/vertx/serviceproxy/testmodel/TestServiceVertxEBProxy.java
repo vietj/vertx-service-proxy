@@ -145,7 +145,7 @@ public class TestServiceVertxEBProxy implements TestService {
   }
 
   public void createStream(String str, Handler<AsyncResult<ReadStream<String>>> resultHandler) {
-io.vertx.streams.CloseableReadStream.open(_vertx.eventBus(), _address, new io.vertx.core.json.JsonObject(), new io.vertx.core.eventbus.DeliveryOptions().addHeader("action", "createStream"), ar -> {
+io.vertx.streams.Consumer.consumer(_vertx.eventBus(), _address).openReadStream(new io.vertx.core.json.JsonObject(), new io.vertx.core.eventbus.DeliveryOptions().addHeader("action", "createStream"), ar -> {
   if (ar.succeeded()) {
     resultHandler.handle(io.vertx.core.Future.succeededFuture((io.vertx.core.streams.ReadStream)ar.result()));
   } else {

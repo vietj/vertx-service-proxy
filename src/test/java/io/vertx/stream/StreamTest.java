@@ -131,6 +131,7 @@ public class StreamTest extends VertxTestBase {
     }));
   }
 
+/*
   @Test
   public void testClose() throws Exception {
     Producer<String> producer = Producer.producer(vertx.eventBus());
@@ -150,4 +151,5 @@ public class StreamTest extends VertxTestBase {
     }));
     await();
   }
+*/
 }

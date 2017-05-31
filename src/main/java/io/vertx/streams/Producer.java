@@ -19,6 +19,8 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.streams.impl.ProducerImpl;
 import io.vertx.streams.impl.Transport;
 
@@ -37,10 +39,10 @@ public interface Producer<T> {
   }
 
   @Fluent
-  Producer<T> readStreamHandler(Handler<CloseableWriteStream<T>> handler);
+  Producer<T> readStreamHandler(Handler<WriteStream<T>> handler);
 
   @Fluent
-  Producer<T> writeStreamHandler(Handler<CloseableReadStream<T>> handler);
+  Producer<T> writeStreamHandler(Handler<ReadStream<T>> handler);
 
   void register(String address);
 

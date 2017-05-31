@@ -21,8 +21,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
-import io.vertx.streams.CloseableReadStream;
-import io.vertx.streams.CloseableWriteStream;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +41,7 @@ public class StreamProducerManager<T> {
     this.transport = transport;
   }
 
-  public void openReadStream(String addr, Handler<AsyncResult<CloseableWriteStream<T>>> handler) {
+  public void openReadStream(String addr, Handler<AsyncResult<WriteStream<T>>> handler) {
     transport.<T>connect(addr, ar -> {
       if (ar.succeeded()) {
         WriteStream<T> sub = ar.result();
@@ -56,7 +54,7 @@ public class StreamProducerManager<T> {
     });
   }
 
-  public String openWriteStream(Handler<AsyncResult<CloseableReadStream<T>>> handler) {
+  public String openWriteStream(Handler<AsyncResult<ReadStream<T>>> handler) {
     String addr = transport.<T>bind(ar -> {
       if (ar.succeeded()) {
         handler.handle(Future.succeededFuture(new ProducerReadStream(ar.result())));
@@ -65,27 +63,15 @@ public class StreamProducerManager<T> {
       }
     });
     active.put(addr, new ProducerStream() {
-      @Override
-      void onClose() {
-      }
     });
     return addr;
   }
 
-  public void close(String addr) {
-    ProducerStream stream = active.remove(addr);
-    if (stream != null) {
-      stream.onClose();
-    }
-  }
-
   abstract class ProducerStream {
 
-    abstract void onClose();
-
   }
 
-  private class ProducerReadStream extends ProducerStream implements CloseableReadStream<T> {
+  private class ProducerReadStream extends ProducerStream implements ReadStream<T> {
 
     private final ReadStream<T> stream;
 
@@ -94,65 +80,42 @@ public class StreamProducerManager<T> {
     }
 
     @Override
-    public CloseableReadStream<T> exceptionHandler(Handler<Throwable> handler) {
+    public ReadStream<T> exceptionHandler(Handler<Throwable> handler) {
       stream.exceptionHandler(handler);
       return this;
     }
-    
+
     @Override
-    public CloseableReadStream<T> handler(Handler<T> handler) {
+    public ReadStream<T> handler(Handler<T> handler) {
       stream.handler(handler);
       return this;
     }
 
     @Override
-    public CloseableReadStream<T> pause() {
+    public ReadStream<T> pause() {
       stream.pause();
       return this;
     }
 
     @Override
-    public CloseableReadStream<T> resume() {
+    public ReadStream<T> resume() {
       stream.resume();
       return this;
     }
 
     @Override
-    public CloseableReadStream<T> endHandler(Handler<Void> handler) {
+    public ReadStream<T> endHandler(Handler<Void> handler) {
       stream.endHandler(handler);
       return this;
     }
-
-    @Override
-    public void close() {
-      // Todo
-    }
-
-    @Override
-    void onClose() {
-    }
   }
 
-  private class ProducerWriteStream extends ProducerStream implements CloseableWriteStream<T> {
+  private class ProducerWriteStream extends ProducerStream implements WriteStream<T> {
 
     private final WriteStream<T> stream;
-    private Handler<Void> closeHandler;
 
     ProducerWriteStream(WriteStream<T> stream) {
       this.stream = stream;
-    }
-
-    @Override
-    void onClose() {
-      if (closeHandler != null) {
-        closeHandler.handle(null);
-      }
-    }
-
-    @Override
-    public CloseableWriteStream<T> closeHandler(Handler<Void> handler) {
-      closeHandler = handler;
-      return this;
     }
 
     @Override

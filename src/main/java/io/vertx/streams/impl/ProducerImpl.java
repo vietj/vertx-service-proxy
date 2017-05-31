@@ -18,9 +18,9 @@ package io.vertx.streams.impl;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
-import io.vertx.streams.CloseableReadStream;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.streams.Producer;
-import io.vertx.streams.CloseableWriteStream;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -28,8 +28,8 @@ import io.vertx.streams.CloseableWriteStream;
 public class ProducerImpl<T> implements Producer<T>, Handler<Message<Object>> {
 
   private final EventBus bus;
-  private Handler<CloseableWriteStream<T>> readStreamHandler;
-  private Handler<CloseableReadStream<T>> writeStreamHandler;
+  private Handler<WriteStream<T>> readStreamHandler;
+  private Handler<ReadStream<T>> writeStreamHandler;
   private StreamProducerManager<T> mgr;
 
   public ProducerImpl(EventBus bus, Transport transport) {
@@ -42,13 +42,13 @@ public class ProducerImpl<T> implements Producer<T>, Handler<Message<Object>> {
   }
 
   @Override
-  public Producer<T> readStreamHandler(Handler<CloseableWriteStream<T>> handler) {
+  public Producer<T> readStreamHandler(Handler<WriteStream<T>> handler) {
     this.readStreamHandler = handler;
     return this;
   }
 
   @Override
-  public Producer<T> writeStreamHandler(Handler<CloseableReadStream<T>> handler) {
+  public Producer<T> writeStreamHandler(Handler<ReadStream<T>> handler) {
     this.writeStreamHandler = handler;
     return this;
   }
@@ -82,7 +82,6 @@ public class ProducerImpl<T> implements Producer<T>, Handler<Message<Object>> {
           }
           break;
         case "close":
-          mgr.close(addr);
           break;
       }
     }

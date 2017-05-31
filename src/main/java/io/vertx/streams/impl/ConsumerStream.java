@@ -6,8 +6,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
-import io.vertx.streams.CloseableReadStream;
-import io.vertx.streams.CloseableWriteStream;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -18,56 +16,51 @@ public class ConsumerStream<T> {
 
   private final ConsumerImpl<T> consumer;
   private final ReadStreamImpl readStream;
-  private final Handler<AsyncResult<CloseableWriteStream<T>>> writeStreamHandler;
+  private final Handler<AsyncResult<WriteStream<T>>> writeStreamHandler;
   private String localAddress;
   private int status = DISCONNECTED;
 
-  class ReadStreamImpl implements CloseableReadStream<T> {
+  class ReadStreamImpl implements ReadStream<T> {
 
-    final Handler<AsyncResult<CloseableReadStream<T>>> doneHandler;
+    final Handler<AsyncResult<ReadStream<T>>> doneHandler;
     Handler<T> handler;
     Handler<Void> endHandler;
 
-    public ReadStreamImpl(Handler<AsyncResult<CloseableReadStream<T>>> doneHandler) {
+    public ReadStreamImpl(Handler<AsyncResult<ReadStream<T>>> doneHandler) {
       this.doneHandler = doneHandler;
     }
 
     @Override
-    public CloseableReadStream<T> exceptionHandler(Handler<Throwable> handler) {
+    public ReadStream<T> exceptionHandler(Handler<Throwable> handler) {
       return this;
     }
 
     @Override
-    public CloseableReadStream<T> handler(Handler<T> h) {
+    public ReadStream<T> handler(Handler<T> h) {
       handler = h;
       return this;
     }
 
     @Override
-    public CloseableReadStream<T> pause() {
+    public ReadStream<T> pause() {
       return this;
     }
 
     @Override
-    public CloseableReadStream<T> resume() {
+    public ReadStream<T> resume() {
       return this;
     }
 
     @Override
-    public CloseableReadStream<T> endHandler(Handler<Void> handler) {
+    public ReadStream<T> endHandler(Handler<Void> handler) {
       endHandler = handler;
       return this;
-    }
-
-    @Override
-    public void close() {
-      ConsumerStream.this.close();
     }
   }
 
   public ConsumerStream(ConsumerImpl<T> consumer,
-                        Handler<AsyncResult<CloseableReadStream<T>>> readStreamHandler,
-                        Handler<AsyncResult<CloseableWriteStream<T>>> writeStreamHandler) {
+                        Handler<AsyncResult<ReadStream<T>>> readStreamHandler,
+                        Handler<AsyncResult<WriteStream<T>>> writeStreamHandler) {
     this.consumer = consumer;
     this.readStream = readStreamHandler != null ? new ReadStreamImpl(readStreamHandler) : null;
     this.writeStreamHandler = writeStreamHandler;
@@ -120,51 +113,9 @@ public class ConsumerStream<T> {
           throw new UnsupportedOperationException("Implement me");
         } else {
           String addr = "" + ar1.result().body();
-          consumer.transport.connect(addr, ar2 -> {
-            if (ar2.failed()) {
-              throw new UnsupportedOperationException("Implement me");
-            } else {
-              WriteStream<Object> stream = ar2.result();
-              CloseableWriteStream ws = new CloseableWriteStream() {
-                @Override
-                public CloseableWriteStream closeHandler(Handler handler) {
-                  return this;
-                }
-                @Override
-                public WriteStream exceptionHandler(Handler handler) {
-                  return this;
-                }
-                @Override
-                public WriteStream write(Object data) {
-                  stream.write(data);
-                  return this;
-                }
-                @Override
-                public void end() {
-                  stream.end();
-                }
-                @Override
-                public WriteStream setWriteQueueMaxSize(int maxSize) {
-                  return this;
-                }
-                @Override
-                public boolean writeQueueFull() {
-                  return false;
-                }
-                @Override
-                public WriteStream drainHandler(Handler handler) {
-                  return this;
-                }
-              };
-              writeStreamHandler.handle(Future.succeededFuture(ws));
-            }
-          });
+          consumer.transport.<T>connect(addr, writeStreamHandler);
         }
       });
     }
-  }
-
-  private void close() {
-    consumer.bus.send(consumer.address, null, new DeliveryOptions().addHeader("addr", localAddress).addHeader("stream", "close"));
   }
 }

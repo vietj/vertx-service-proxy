@@ -5,6 +5,8 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.streams.impl.ConsumerImpl;
 import io.vertx.streams.impl.Transport;
 
@@ -22,11 +24,11 @@ public interface Consumer<T> {
     return new ConsumerImpl<T>(bus, address, transport);
   }
 
-  void openReadStream(Object body, DeliveryOptions options, Handler<AsyncResult<CloseableReadStream<T>>> doneHandler);
+  void openReadStream(Object body, DeliveryOptions options, Handler<AsyncResult<ReadStream<T>>> doneHandler);
 
-  void openReadStream(Handler<AsyncResult<CloseableReadStream<T>>> doneHandler);
+  void openReadStream(Handler<AsyncResult<ReadStream<T>>> doneHandler);
 
-  void openWriteStream(Object body, DeliveryOptions options, Handler<AsyncResult<CloseableWriteStream<T>>> doneHandler);
+  void openWriteStream(Object body, DeliveryOptions options, Handler<AsyncResult<WriteStream<T>>> doneHandler);
 
-  void openWriteStream(Handler<AsyncResult<CloseableWriteStream<T>>> doneHandler);
+  void openWriteStream(Handler<AsyncResult<WriteStream<T>>> doneHandler);
 }
